@@ -43,7 +43,8 @@ jobs:
       - name: Package (player folder, to test with Crowbar)
         run: |
           export MSYS2_ROOT=$(cygpath -u "$(cygpath -w /)")
-          bash packaging/windows/package.sh
+          # Test package: without NVIDIA's DLSS bridge (its runtime and license are not in CI).
+          PS4RT_PACKAGE_NO_DLSS=1 bash packaging/windows/package.sh
       - uses: actions/upload-artifact@v4
         with:
           name: star-ocean-5-crowbar-test
