@@ -1,0 +1,47 @@
+name: Windows check
+
+# Builds the crowbar-sdk branch with MSYS2 CLANG64 (packaging/windows/README.md) to check the
+# Crowbar changes compile before they are offered upstream. Not part of the PR.
+on:
+  push:
+    branches: ["crowbar-sdk-ci"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      MSYS2_ROOT: ""
+    steps:
+      - name: Long paths (fsr-vulkan's generated headers)
+        shell: pwsh
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANG64
+          update: true
+          install: >-
+            git patch
+            mingw-w64-clang-x86_64-toolchain mingw-w64-clang-x86_64-cmake mingw-w64-clang-x86_64-ninja
+            mingw-w64-clang-x86_64-pkgconf mingw-w64-clang-x86_64-python
+            mingw-w64-clang-x86_64-vulkan-headers mingw-w64-clang-x86_64-vulkan-loader
+            mingw-w64-clang-x86_64-vulkan-memory-allocator mingw-w64-clang-x86_64-glslang
+            mingw-w64-clang-x86_64-sdl3 mingw-w64-clang-x86_64-fmt mingw-w64-clang-x86_64-boost
+            mingw-w64-clang-x86_64-robin-map mingw-w64-clang-x86_64-xxhash mingw-w64-clang-x86_64-ffmpeg
+            mingw-w64-clang-x86_64-zydis mingw-w64-clang-x86_64-spirv-tools
+            mingw-w64-clang-x86_64-spirv-headers mingw-w64-clang-x86_64-spirv-cross
+      - name: Build
+        run: PS4RT_BUILD_JOBS=4 bash build.sh
+      - name: Tests touched by the Crowbar module
+        if: always()
+        run: |
+          cmake --build out/gpu --target crowbar-pause-test crowbar-state-test crowbar-unlock-test pad-input-test
+          out/gpu/crowbar-pause-test.exe
+          out/gpu/crowbar-state-test.exe
+          out/gpu/crowbar-unlock-test.exe
+          out/gpu/pad-input-test.exe
