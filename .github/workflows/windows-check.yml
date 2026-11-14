@@ -35,8 +35,16 @@ jobs:
             mingw-w64-clang-x86_64-robin-map mingw-w64-clang-x86_64-xxhash mingw-w64-clang-x86_64-ffmpeg
             mingw-w64-clang-x86_64-zydis mingw-w64-clang-x86_64-spirv-tools
             mingw-w64-clang-x86_64-spirv-headers mingw-w64-clang-x86_64-spirv-cross
+            mingw-w64-clang-x86_64-llvm-tools zip
       - name: Build
         run: PS4RT_BUILD_JOBS=4 bash build.sh
+      - name: Package (player folder, to test with Crowbar)
+        run: bash packaging/windows/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: star-ocean-5-crowbar-test
+          path: dist/*.zip
+          retention-days: 14
       - name: Tests touched by the Crowbar module
         if: always()
         run: |
