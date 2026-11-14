@@ -14,8 +14,6 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
-    env:
-      MSYS2_ROOT: ""
     steps:
       - name: Long paths (fsr-vulkan's generated headers)
         shell: pwsh
@@ -37,9 +35,15 @@ jobs:
             mingw-w64-clang-x86_64-spirv-headers mingw-w64-clang-x86_64-spirv-cross
             mingw-w64-clang-x86_64-llvm-tools zip
       - name: Build
-        run: PS4RT_BUILD_JOBS=4 bash -x build.sh
+        # msys2-env.sh defaults to C:/msys64: on GitHub's runners that is an older, different
+        # MSYS2, whose cp then fails to start (exit 127). Point it at the one set up here.
+        run: |
+          export MSYS2_ROOT=$(cygpath -u "$(cygpath -w /)")
+          PS4RT_BUILD_JOBS=4 bash build.sh
       - name: Package (player folder, to test with Crowbar)
-        run: bash packaging/windows/package.sh
+        run: |
+          export MSYS2_ROOT=$(cygpath -u "$(cygpath -w /)")
+          bash packaging/windows/package.sh
       - uses: actions/upload-artifact@v4
         with:
           name: star-ocean-5-crowbar-test
